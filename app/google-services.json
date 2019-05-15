@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "397051621269",
+    "firebase_url": "https://levelupfirebase.firebaseio.com",
+    "project_id": "levelupfirebase",
+    "storage_bucket": "levelupfirebase.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:397051621269:android:766f7d9d853330ca",
+        "android_client_info": {
+          "package_name": "com.example.firebaseauthlevelup"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "397051621269-2v95k9n04skgv3sg91kdv3ncsepkog23.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBR2Ev9QjV9Vgxf8Ll-ffdL-NLPz4AodPk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "397051621269-2v95k9n04skgv3sg91kdv3ncsepkog23.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
