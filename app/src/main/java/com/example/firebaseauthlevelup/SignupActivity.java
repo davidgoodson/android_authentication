@@ -3,6 +3,7 @@ package com.example.firebaseauthlevelup;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -11,20 +12,22 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.AuthResult;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
 public class SignupActivity extends AppCompatActivity {
     private static final String TAG = "SignupActivity";
+    private FirebaseAuth mAuth;
 
-    @BindView(R.id.input_name)
-    EditText _nameText;
-    @BindView(R.id.input_address)
-    EditText _addressText;
+
     @BindView(R.id.input_email)
     EditText _emailText;
-    @BindView(R.id.input_mobile)
-    EditText _mobileText;
     @BindView(R.id.input_password)
     EditText _passwordText;
     @BindView(R.id.input_reEnterPassword)
@@ -39,6 +42,8 @@ public class SignupActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_signup);
         ButterKnife.bind(this);
+
+        mAuth = FirebaseAuth.getInstance();
 
         _signupButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -62,8 +67,7 @@ public class SignupActivity extends AppCompatActivity {
     public void signup() {
         Log.d(TAG, "Signup");
 
-        if (!validate()) {
-            onSignupFailed();
+        if (validate() == false) {
             return;
         }
 
@@ -75,11 +79,8 @@ public class SignupActivity extends AppCompatActivity {
         progressDialog.setMessage("Creating Account...");
         progressDialog.show();
 
-        String name = _nameText.getText().toString();
-        String address = _addressText.getText().toString();
-        String email = _emailText.getText().toString();
-        String mobile = _mobileText.getText().toString();
-        String password = _passwordText.getText().toString();
+        final String email = _emailText.getText().toString();
+        final String password = _passwordText.getText().toString();
         String reEnterPassword = _reEnterPasswordText.getText().toString();
 
         // TODO: Implement your own signup logic here.
@@ -89,7 +90,8 @@ public class SignupActivity extends AppCompatActivity {
                     public void run() {
                         // On complete call either onSignupSuccess or onSignupFailed
                         // depending on success
-                        onSignupSuccess();
+                        //onSignupSuccess();
+                        createAccount(email, password);
                         // onSignupFailed();
                         progressDialog.dismiss();
                     }
@@ -112,26 +114,10 @@ public class SignupActivity extends AppCompatActivity {
     public boolean validate() {
         boolean valid = true;
 
-        String name = _nameText.getText().toString();
-        String address = _addressText.getText().toString();
         String email = _emailText.getText().toString();
-        String mobile = _mobileText.getText().toString();
         String password = _passwordText.getText().toString();
         String reEnterPassword = _reEnterPasswordText.getText().toString();
 
-        if (name.isEmpty() || name.length() < 3) {
-            _nameText.setError("at least 3 characters");
-            valid = false;
-        } else {
-            _nameText.setError(null);
-        }
-
-        if (address.isEmpty()) {
-            _addressText.setError("Enter Valid Address");
-            valid = false;
-        } else {
-            _addressText.setError(null);
-        }
 
 
         if (email.isEmpty() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
@@ -141,21 +127,15 @@ public class SignupActivity extends AppCompatActivity {
             _emailText.setError(null);
         }
 
-        if (mobile.isEmpty() || mobile.length()!=10) {
-            _mobileText.setError("Enter Valid Mobile Number");
-            valid = false;
-        } else {
-            _mobileText.setError(null);
-        }
 
-        if (password.isEmpty() || password.length() < 4 || password.length() > 10) {
-            _passwordText.setError("between 4 and 10 alphanumeric characters");
+        if (password.isEmpty() || password.length() < 6) {
+            _passwordText.setError("Must be at least 6 characters");
             valid = false;
         } else {
             _passwordText.setError(null);
         }
 
-        if (reEnterPassword.isEmpty() || reEnterPassword.length() < 4 || reEnterPassword.length() > 10 || !(reEnterPassword.equals(password))) {
+        if (reEnterPassword.isEmpty() || reEnterPassword.length() < 6 || !(reEnterPassword.equals(password))) {
             _reEnterPasswordText.setError("Password Do not match");
             valid = false;
         } else {
@@ -164,4 +144,26 @@ public class SignupActivity extends AppCompatActivity {
 
         return valid;
     }
+
+
+    private  void createAccount(String email, String password){
+        mAuth.createUserWithEmailAndPassword(email, password).addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+            @Override
+            public void onComplete(@NonNull Task<AuthResult> task) {
+                if(task.isSuccessful()){
+                    Log.d("New User", "createUserWithEmailAndPassword: success");
+                    onSignupSuccess();
+                    FirebaseUser user = mAuth.getCurrentUser();
+                    updateUI(user);
+                } else {
+                    Log.w("New User", "createUserWithEmailAndPassword failed", task.getException());
+                    onSignupFailed();
+                    Toast.makeText(getApplicationContext(), "Authentication Fail!", Toast.LENGTH_LONG).show();
+                    updateUI(null);
+                }
+            }
+        });
+    }
+
+    private  void updateUI(FirebaseUser user){}
 }
