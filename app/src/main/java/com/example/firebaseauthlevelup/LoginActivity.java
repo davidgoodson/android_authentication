@@ -13,6 +13,7 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.facebook.CallbackManager;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -21,9 +22,11 @@ import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.GoogleAuthProvider;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -34,6 +37,7 @@ public class LoginActivity extends AppCompatActivity {
     public static final int GOOGLE_SIGN_IN = 1;
     private FirebaseAuth mAuth;
     GoogleSignInClient mGoogleSignInClient;
+    CallbackManager callbackManager;
 
     @BindView(R.id.input_email)
     EditText _emailText;
@@ -52,10 +56,12 @@ public class LoginActivity extends AppCompatActivity {
         setContentView(R.layout.activity_login);
         ButterKnife.bind(this);
 
+        callbackManager = CallbackManager.Factory.create();
+
         mAuth = FirebaseAuth.getInstance();
 
         //Creating the google sign in options
-        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).requestEmail().build();
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).requestIdToken(getString(R.string.default_web_client_id)).requestEmail().build();
 
         //initialising the client
         mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
@@ -90,15 +96,10 @@ public class LoginActivity extends AppCompatActivity {
 
     public void onStart(){
         super.onStart();
-        GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this);
+        //GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this);
         FirebaseUser currentUser = mAuth.getCurrentUser();
 
-
-        if(account != null)
-            updateUI(account);
-        else
-            updateUI(currentUser);
-
+        updateUI(currentUser);
     }
 
     public void login() {
@@ -148,6 +149,8 @@ public class LoginActivity extends AppCompatActivity {
                 break;
             case GOOGLE_SIGN_IN:
                 Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
+                Log.d("TASK PASSED FORWARD",  task.toString());
+//                Log.d("TASK PASSED FORWARD",  data.getDataString());
                 handleSignInResult(task);
                 break;
         }
@@ -202,6 +205,7 @@ public class LoginActivity extends AppCompatActivity {
                     Log.d("Sign In", "signInWithEmailAndPassword: successful");
                     FirebaseUser user = mAuth.getCurrentUser();
                     onLoginSuccess();
+                    updateUI(user);
                 }else{
                     Log.w("New User", "signInWithEmailAndPassword: fail!", task.getException());
                     Toast.makeText(getApplicationContext(), "Authentication Fail", Toast.LENGTH_LONG).show();
@@ -219,20 +223,48 @@ public class LoginActivity extends AppCompatActivity {
 
 
 
-    private void updateUI(FirebaseUser user){}
-    private void updateUI(GoogleSignInAccount account){}
+    private void updateUI(FirebaseUser user){
+        if (user != null) {
+            Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+            intent.putExtra("EMAIL", user.getEmail());
+            intent.putExtra("DISPLAY_NAME", user.getDisplayName());
+            intent.putExtra("USERID", user.getUid());
+
+            startActivity(intent);
+        }
+    }
 
     private void handleSignInResult(Task<GoogleSignInAccount> completedTask){
         try {
             GoogleSignInAccount account = completedTask.getResult(ApiException.class);
             //
             // Signed in successfully, show authenticated UI.
-            updateUI(account);
+            Log.d("Account Log", account.getDisplayName());
+           firebaseAuthWithGoogle(account);
         } catch (ApiException e) {
             // The ApiException status code indicates the detailed failure reason.
             // Please refer to the GoogleSignInStatusCodes class reference for more information.
-            Log.w(TAG, "signInResult:failed code=" + e.getStatusCode());
+            Log.w(TAG, "signInResult:failed code=" + e.getMessage());
             //updateUI(null);
         }
+    }
+
+    private void firebaseAuthWithGoogle(GoogleSignInAccount account){
+        Log.d("Account ID: ", account.getId());
+
+        AuthCredential credential = GoogleAuthProvider.getCredential(account.getIdToken(), null);
+        mAuth.signInWithCredential(credential).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+            @Override
+            public void onComplete(@NonNull Task<AuthResult> task) {
+                if(task.isSuccessful()){
+                    Log.d("Google-Firebase", "singInWithCredential: success");
+                    FirebaseUser user = mAuth.getCurrentUser();
+                    updateUI(user);
+                } else {
+                    Log.w("Google-Firebase", "singInWithCredential: fail", task.getException());
+                    updateUI(null);
+                }
+            }
+        });
     }
 }

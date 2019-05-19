@@ -1,74 +1,68 @@
 package com.example.firebaseauthlevelup;
 
 import android.content.Intent;
-import android.support.annotation.NonNull;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.widget.Toast;
+import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
 
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+
 public class MainActivity extends AppCompatActivity {
 
-    private FirebaseAuth mAuth;
+    @BindView(R.id.userName)
+    TextView txtUserEmail;
+
+    @BindView(R.id.userID)
+    TextView txtUserID;
+
+    @BindView(R.id.btn_logout)
+    Button btnLogout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mAuth = FirebaseAuth.getInstance();
+        ButterKnife.bind(this);
 
-        Intent intent = new Intent(this, LoginActivity.class);
-        startActivity(intent);
-    }
-
-    @Override
-    public void onStart(){
-        super.onStart();
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-        updateUI(currentUser);
-    }
+        super.onResume();
+        String email = getIntent().getStringExtra("EMAIL");
+        String userid = getIntent().getStringExtra("USERID");
 
 
+        if(email == null)
+            txtUserEmail.setText("NONE");
+        else
+            txtUserEmail.setText(email);
 
-    private  void createAccount(String email, String password){
-        mAuth.createUserWithEmailAndPassword(email, password).addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+        if (userid == null)
+            txtUserID.setText("NONE");
+        else
+            txtUserID.setText(userid);
+
+
+        btnLogout.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onComplete(@NonNull Task<AuthResult> task) {
-                if(task.isSuccessful()){
-                    Log.d("New User", "createUserWithEmailAndPassword: success");
-                    FirebaseUser user = mAuth.getCurrentUser();
-                    updateUI(user);
-                } else {
-                    Log.w("New User", "createUserWithEmailAndPassword failed", task.getException());
-                    Toast.makeText(getApplicationContext(), "Authentication Fail!", Toast.LENGTH_LONG).show();
-                    updateUI(null);
+            public void onClick(View v) {
+
+                FirebaseAuth.getInstance().signOut();
+
+                if(FirebaseAuth.getInstance().getCurrentUser() == null){
+                    Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
+                    startActivity(intent);
                 }
+
             }
         });
+
     }
 
-    private void signIn(String email, String password){
-        mAuth.signInWithEmailAndPassword(email, password).addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-            @Override
-            public void onComplete(@NonNull Task<AuthResult> task) {
-                if(task.isSuccessful()){
-                    Log.d("Sign In", "signInWithEmailAndPassword: successful");
-                    FirebaseUser user = mAuth.getCurrentUser();
-                }else{
-                    Log.w("New User", "signInWithEmailAndPassword: fail!", task.getException());
-                    Toast.makeText(getApplicationContext(), "Authentication Fail", Toast.LENGTH_LONG).show();
-                    updateUI(null);
-                }
-            }
-        });
-    }
 
-    private  void updateUI(FirebaseUser user){}
 }
